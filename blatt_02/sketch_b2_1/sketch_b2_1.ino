@@ -1,6 +1,6 @@
 int ledPin = 7;
-int minPin = 5;
-int pluPin = 3;
+int minPin = 10;
+int pluPin = 11;
 int pressed = 0;
 int button = 0; // 0 = plus, 1 = minus
 
