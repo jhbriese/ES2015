@@ -8,6 +8,7 @@ LiquidCrystal lcd(32, 31, 44, 45, 46, 47);
 int xVref=A0;
 int xX=A1;
 int xZ=A2;
+int xAz=0;
 
 //Gyro Axis
 int valX = 0;
@@ -15,12 +16,26 @@ int valZ = 0;
 int valRef= 0;
 
 //Read flag
-int read = 0;
+int fRead = 0;
+//AZ flag
+int fAz = 1;
+//Calibration Flag
+int fCal = 1;
+//Calibration Values
+int calCount = 0;
+float calX = 0.0;
+float calZ = 0.0;
 
 //Counter for write delay
 int wcount = 0;
 
 void setup() {
+  pinMode(xAz, OUTPUT);
+  pinMode(xX, INPUT);
+  pinMode(xZ, INPUT);
+  
+  digitalWrite(xAz, LOW);
+  
   // set up the LCD's number of columns and rows: 
   lcd.begin(16, 2);
   // Print a message to the LCD.
@@ -49,25 +64,53 @@ void setup() {
 }
 
 void loop() {
-  
-  if(read == 1)
+  if(fAz == 1)
   {
-    read = 0;
+    digitalWrite(xAz, HIGH);
+    delayMicroseconds(1700);
+    digitalWrite(xAz, LOW);
+    fAz = 0;
+  }
+  
+  if(fRead == 1)
+  {
+    fRead = 0;
     
     valX = analogRead(xX);       // read analog input pin 0
     valZ = analogRead(xZ);       // read analog input pin 1
     
-    if (wcount >= 5)
+    if(fCal == 1 && calCount <= 10)
     {
-      PrintX();
-      PrintZ();
-      wcount = 0;
+        calCount++;
+        if(calX != 0 && calZ != 0)
+        {
+          calX = (calX + float(valX - valRef))/2.0;
+          calZ = (calZ + float(valZ - valRef))/2.0;
+        }
+        else
+        {
+          calX = float(valX - valRef);
+          calZ = float(valZ - valRef);
+        }
+    }
+    else if(calCount > 10)
+    {
+        calCount = 0;
+        fCal = 0; 
     }
     else
     {
-      wcount++;
+      if (wcount >= 5)
+      {
+        PrintX();
+        PrintZ();
+        wcount = 0;
+      }
+      else
+      {
+        wcount++;
+      }
     }
-    //delay(100);
   }  
 }
 
@@ -75,7 +118,7 @@ void loop() {
 void TC0_Handler()
 {
   TC_GetStatus(TC0, 0);
-  read = 1;  
+  fRead = 1;  
 }
 
 void PrintX()
@@ -83,7 +126,7 @@ void PrintX()
   lcd.setCursor(3, 0);
   lcd.print("                ");
   lcd.setCursor(3, 0);
-  lcd.print(CalcDeg(valX));
+  lcd.print(CalcDeg(float(valX)-calX));
   lcd.print(" Deg");
 }
 
@@ -92,11 +135,11 @@ void PrintZ()
   lcd.setCursor(3, 1);
   lcd.print("                ");
   lcd.setCursor(3, 1);
-  lcd.print(CalcDeg(valZ));
+  lcd.print(CalcDeg(float(valZ)-calZ));
   lcd.print(" Deg");
 }
 
-float CalcDeg(int val)
+float CalcDeg(float val)
 {
-  return (val - valRef) / 9.1;
+  return (val - float(valRef)) / 1.86368;
 }
