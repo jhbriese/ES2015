@@ -6,7 +6,7 @@ float pos = 90.0;
 //PIN Setup IXZ-500
 int xVref=A0;
 int xZ=A1;
-int xAz=2;
+int xAz=5;
 int led=13;
 
 //Gyro Axis
@@ -24,7 +24,7 @@ int calCount = 0;
 float calZ = 0.0;
 
 void setup() {
-  myservo.attach(22);
+  myservo.attach(10);
   pinMode(xAz, OUTPUT);
   pinMode(xZ, INPUT);
   pinMode(led, OUTPUT);
@@ -62,16 +62,13 @@ void loop() {
   if(fRead == 1)
   {
     fRead = 0;
-    //get Gyro RefSignal
-    valRef = analogRead(xVref);
-    valZ = analogRead(xZ);
     
     if(fCal == 1 && calCount <= 10)
     {
         calCount++;
         if(calZ != 0)
         {
-          calZ = (calZ + float(valZ - valRef))/2.0;
+          calZ = (calZ + float(valZ - valRef))/2.0/4.9;
         }
         else
         {
@@ -98,7 +95,10 @@ void loop() {
 void TC8_Handler()
 {
   TC_GetStatus(TC2, 2);
-  fRead = 1;  
+  fRead = 1;
+  //get Gyro RefSignal
+  valRef = analogRead(xVref);
+  valZ = analogRead(xZ);  
 }
 
 float CalcDeg(float val)
@@ -108,8 +108,15 @@ float CalcDeg(float val)
 
 void rotate(float rate)
 {
-  pos=pos+(rate/10.0);
-  myservo.write(pos);
+  if(pos+(rate/10) > 160 || pos+(rate/10) < 20)
+  {
+    blinkLED();
+  }
+  else
+  {
+    pos=pos+(rate/10);
+    myservo.write(pos);
+  }
 }
 
 void blinkLED()

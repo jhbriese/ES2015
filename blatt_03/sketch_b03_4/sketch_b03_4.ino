@@ -1,5 +1,5 @@
 String inString = "";
-int pinLED = 53;
+int pinLED = 13;
 
 void setup() 
 {
@@ -33,8 +33,7 @@ void stringToCode(String string)
   
   for(int i = 0; i < sLength; i++)
   {
-    //Serial.print("Convert: ");
-    //Serial.println(chars[i]);
+    //Convert Chars to code (1=. ; 2=- ; 3=<break between Chars> ; 4 = <Space>
     switch(chars[i])
     {
       case 'a':

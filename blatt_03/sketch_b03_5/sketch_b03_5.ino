@@ -1,10 +1,14 @@
 #include <Servo.h> 
-int inInt = 0;
+String inString = "";
+int pinLED = 13;
+
 Servo myservo;
 
 void setup() 
 {
-  myservo.attach(22);
+  pinMode(pinLED, OUTPUT);
+  digitalWrite(pinLED, LOW);
+  myservo.attach(10);
   Serial.begin(9600);     
 }
 
@@ -14,26 +18,48 @@ void loop()
   if (Serial.available() > 0) 
   {
     // read the incoming byte:
-    inInt = Serial.parseInt();
+    inString = Serial.readString();
     // say what you got:
     Serial.print("#I received: ");
-    Serial.println(inInt);
-    moveTo(inInt);
-    Serial.println("#End of Message\n");    
+    Serial.println(inString);
+    parseString(inString);
+    Serial.println("\n#End of Message");    
   }
 }
 
-void moveTo(int angle)
+void parseString(String string)
 {
-  if(angle < 20 || angle > 160)
+  int endNumber = 0;
+  if(string.substring(0,7) == "moveTo(")
   {
-    Serial.println("ANGLE OUT OF RANGE ERROR! Pleas select angle between 20 and 160 degree!");
+    int endNumber = string.indexOf(")");
+    int angle = 0;
+    if(string.length() != endNumber + 1)
+    {
+      printError("Length error or ) missing");
+    }
+    else
+    {
+      angle = string.substring(7,endNumber).toInt();
+      if(angle > 155 || angle < 25)
+      {
+        Serial.print("ANGLE OUT OF RANGE: RANGE = 25-155: ");
+        Serial.println(angle);
+      }
+      else
+      {
+        myservo.write(angle);
+      }
+    }
   }
   else
   {
-    Serial.print("Moving to: ");
-    Serial.print(angle);
-    Serial.println(" degree");
-    myservo.write(angle);
+    printError("Invalid Function");
   }
+}
+
+void printError(String msg)
+{
+  Serial.print("Illigal Input detected: ");
+  Serial.println(msg);
 }
