@@ -72,7 +72,7 @@ void TC8_Handler()
   {
      if(digitalRead(btPin) == 0)
      {
-       if(pressed == 31)
+       if(pressed >= 31)
        {
          fSend = 1;
        }
