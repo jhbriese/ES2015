@@ -24,7 +24,7 @@ void loop()
  * ###################
  */
 
-int checkFileSD(String fileName)
+int checkFileSD(char *fileName)
 {
   Serial.print("Checking file: ");
   Serial.println(fileName);
@@ -54,7 +54,7 @@ int checkFileSD(String fileName)
   }
 }
 
-int readTextFile(String fileName)
+int readTextFile(char *fileName)
 {
   Serial.print("Read Textfile: ");
   Serial.println(fileName);

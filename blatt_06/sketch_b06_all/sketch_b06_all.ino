@@ -146,7 +146,7 @@ void setup()
   
   setWhite();
 
-  readTextFile("text1.txt");
+  readTextFile("text2.txt");
 }
 
 void loop() 
@@ -233,7 +233,7 @@ void transferBuffer()
  * ###################
  */
 
-int checkFileSD(String fileName)
+int checkFileSD(char *fileName)
 {
   Serial.print("Checking file: ");
   Serial.println(fileName);
@@ -263,7 +263,7 @@ int checkFileSD(String fileName)
   }
 }
 
-int readTextFile(String fileName)
+int readTextFile(char *fileName)
 {
   Serial.print("Read Textfile: ");
   Serial.println(fileName);
@@ -275,10 +275,17 @@ int readTextFile(String fileName)
     Serial.println("File check: OK");
     
     int writeX = 0;
+    int writeY = 0;
     while(sdFile.available()) 
     {
-      tmpError += setChar(writeX, 0, sdFile.read());
+      tmpError += setChar(writeX, writeY, sdFile.read());
+      
       writeX+=6;
+      if(writeX > 83)
+      {
+        writeY+=8;
+        writeX=0;
+      }
       Serial.println(writeX);
     }
     sdFile.close();
@@ -302,5 +309,10 @@ int readTextFile(String fileName)
     tmpError += setChar(66, 0, ' ');
     tmpError += setChar(72, 0, (char)sdFile.available());
   }
+}
+
+int readPicFile(char *fileName)
+{
+  
 }
 
