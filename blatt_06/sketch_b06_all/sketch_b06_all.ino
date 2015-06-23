@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <SD.h>
 
 //ASCII fontset
 unsigned char font[95][6] =
@@ -101,11 +102,15 @@ unsigned char font[95][6] =
 };
 
 //LCD Parameter
-int slaveSelectPin = 10;
+int slaveSelectLCD = 10;
 int rstPin = 6;
 int ledPin = 2;
 int dcPin = 5;
 int clkDivider = 84;
+
+//SD Parameter
+int slaveSelectSD = 4;
+File sdFile;
 
 //LCD Buffer to transmit
 byte pixBuffer[6][84];
@@ -124,125 +129,35 @@ void setup()
   
   pinMode(dcPin, OUTPUT);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
+
+  SD.begin(slaveSelectSD);
   
-  SPI.begin(slaveSelectPin);
-  SPI.setClockDivider(slaveSelectPin, clkDivider);
+  SPI.begin(slaveSelectLCD);
+  SPI.setClockDivider(slaveSelectLCD, clkDivider);
   
   digitalWrite(dcPin, LOW);
-  SPI.transfer(slaveSelectPin, 0x21);
-  SPI.transfer(slaveSelectPin, 0x14);
-  SPI.transfer(slaveSelectPin, 0xB0);
-  SPI.transfer(slaveSelectPin, 0x20);
-  SPI.transfer(slaveSelectPin, 0x0C);
+  SPI.transfer(slaveSelectLCD, 0x21);
+  SPI.transfer(slaveSelectLCD, 0x14);
+  SPI.transfer(slaveSelectLCD, 0xB0);
+  SPI.transfer(slaveSelectLCD, 0x20);
+  SPI.transfer(slaveSelectLCD, 0x0C);
   digitalWrite(dcPin, HIGH);
   
   setWhite();
+
+  readTextFile("text1.txt");
 }
 
 void loop() 
 {
-  //Test513();  
-  
-  /*int printAt = 1;
-  if(printAt == 1)
-  {
-    Test52();
-    !printAt;
-  }*/
-  
-  Test53();
+  //
 }
 
-void Test513()
-{
-  int error=0;
-  if(testValue == 0)
-      testValue = 1;
-  else
-    testValue = 0;
-  
-  Serial.print("Setting display RowWise: ");
-  Serial.println(testValue);
-  
-  for(int x=0; x<84; x++)
-  {
-    for(int y=0; y<48; y++)
-    {
-      error = error + setPixel(x,y,testValue);
-    }
-    transferBuffer();
-    delay(20);
-  }
-  Serial.print("Test caused ");
-  Serial.print(error);
-  Serial.println(" Error(s)!");
-  
-}
-
-void Test52()
-{
-  int error = setChar(39, 20, 32);
-}
-
-void Test53()
-{
-  int error = 0;
-
-  error = error + setChar(33, 12, 'J'); // J
-  error = error + setChar(39, 12, 'a'); // A
-  error = error + setChar(45, 12, 'n'); // N
-  
-  error = error + setChar(24, 20, 'B'); // B
-  error = error + setChar(30, 20, 'r'); // R
-  error = error + setChar(36, 20, 'i'); // I
-  error = error + setChar(42, 20, 'e'); // E
-  error = error + setChar(48, 20, 's'); // S
-  error = error + setChar(54, 20, 'e'); // E
-  
-  error = error + setChar(21, 28, '6'); // 6
-  error = error + setChar(27, 28, '5'); // 5
-  error = error + setChar(33, 28, '2'); // 2
-  error = error + setChar(39, 28, '3'); // 3
-  error = error + setChar(45, 28, '4'); // 4
-  error = error + setChar(51, 28, '0'); // 0
-  error = error + setChar(57, 28, '8'); // 8
-  
-  delay(5000);
-  setWhite();
-  
-  error = error + setChar(30, 12, 'M');	//M
-  error = error + setChar(36, 12, 'a');	//a
-  error = error + setChar(42, 12, 'r');	//r	
-  error = error + setChar(48, 12, 'c');	//c
-  
-  error = error + setChar(12, 20, 'S');	//S
-  error = error + setChar(18, 20, 't');	//t
-  error = error + setChar(24, 20, 'r');	//r
-  error = error + setChar(30, 20, 'o');	//o
-  error = error + setChar(36, 20, 't');	//t
-  error = error + setChar(42, 20, 'h');	//h
-  error = error + setChar(48, 20, 'm');	//m
-  error = error + setChar(54, 20, 'a');	//a
-  error = error + setChar(60, 20, 'n');	//n
-  error = error + setChar(66, 20, 'n');	//n
-  
-  error = error + setChar(21, 28, '6');	//6
-  error = error + setChar(27, 28, '5');	//5
-  error = error + setChar(33, 28, '3');	//3
-  error = error + setChar(39, 28, '7');	//7
-  error = error + setChar(45, 28, '6');	//6
-  error = error + setChar(51, 28, '4');	//4
-  error = error + setChar(57, 28, '6');	//6
-  
-  Serial.print("Test caused ");
-  Serial.print(error);
-  Serial.println(" Error(s)!");
-
-  delay(5000);
-  setWhite();
-}  
-  
+/* ####################
+ * # LCD Function Set # 
+ * ####################
+ */
 int setPixel(int x, int y, int value)
 {
   if(x > 83 || x < 0 || y > 47 || y < 0)
@@ -279,6 +194,7 @@ int setChar(int x, int y, char asciiChar)
   return error;
 }
 
+
 void setWhite()
 {
   resetBuffer();
@@ -299,15 +215,92 @@ void transferBuffer()
 {
   //go to first RAM Adress (y=0, x=0)
   digitalWrite(dcPin, LOW);
-  SPI.transfer(slaveSelectPin, 0x40);
-  SPI.transfer(slaveSelectPin, 0x80);
+  SPI.transfer(slaveSelectLCD, 0x40);
+  SPI.transfer(slaveSelectLCD, 0x80);
   //write Buffer to Display
   digitalWrite(dcPin, HIGH);
   for(int n=0;n<6;n++)
   {
     for(int m=0;m<84;m++)
     {
-      SPI.transfer(slaveSelectPin, pixBuffer[n][m]);
+      SPI.transfer(slaveSelectLCD, pixBuffer[n][m]);
     }
   }
 }
+
+/* ###################
+ * # SD Function Set # 
+ * ###################
+ */
+
+int checkFileSD(String fileName)
+{
+  Serial.print("Checking file: ");
+  Serial.println(fileName);
+  
+  if(SD.exists(fileName))
+  {
+    //File exists
+    Serial.println("Found file!");
+    sdFile = SD.open(fileName);
+    if(sdFile.available() > 0)
+    {
+      Serial.print("File has: ");
+      //Serial.print(sdFile.available());
+      Serial.println(" Bytes");
+      return 0; //File exists with content
+    }
+    else
+    {
+      Serial.println("File is empty!");
+      return 1; //File exists without content
+    }
+  }
+  else
+  {
+    Serial.println("File not found!");
+    return 2; //File not found
+  }
+}
+
+int readTextFile(String fileName)
+{
+  Serial.print("Read Textfile: ");
+  Serial.println(fileName);
+  
+  int error = checkFileSD(fileName);
+  int tmpError = 0;
+  if(error == 0)
+  {
+    Serial.println("File check: OK");
+    
+    int writeX = 0;
+    while(sdFile.available()) 
+    {
+      tmpError += setChar(writeX, 0, sdFile.read());
+      writeX+=6;
+      Serial.println(writeX);
+    }
+    sdFile.close();
+  }
+  else
+  {
+    Serial.print("File check: Error: ");
+    Serial.println(error);
+    
+    tmpError += setChar(0, 0, 'F');
+    tmpError += setChar(6, 0, 'i');
+    tmpError += setChar(12, 0, 'l');
+    tmpError += setChar(18, 0, 'e');
+    tmpError += setChar(24, 0, ' ');
+    tmpError += setChar(30, 0, 'E');
+    tmpError += setChar(36, 0, 'r');
+    tmpError += setChar(42, 0, 'r');
+    tmpError += setChar(48, 0, 'o');
+    tmpError += setChar(54, 0, 'r');
+    tmpError += setChar(60, 0, ':');
+    tmpError += setChar(66, 0, ' ');
+    tmpError += setChar(72, 0, (char)sdFile.available());
+  }
+}
+
