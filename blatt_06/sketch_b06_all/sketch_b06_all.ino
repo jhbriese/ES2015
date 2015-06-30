@@ -146,12 +146,16 @@ void setup()
   
   setWhite();
 
-  readTextFile("text2.txt");
+  //readTextFile("text2.txt");
+  //readPicFile("smile1.img");
 }
 
 void loop() 
 {
-  //
+  readPicFile("smile2.img");
+  delay(200);
+  readPicFile("smile3.img");
+  delay(200);
 }
 
 /* ####################
@@ -313,6 +317,102 @@ int readTextFile(char *fileName)
 
 int readPicFile(char *fileName)
 {
+  Serial.print("Read Imagefile: ");
+  Serial.println(fileName);
   
+  int error = checkFileSD(fileName);
+  int tmpError = 0;
+  if(error == 0)
+  {
+    Serial.println("File check: OK");
+    
+    int lineNo = 0;
+    int detCom = 0;
+    int dimX = 0;
+    String tmpX = "";
+    int dimY = 0;
+    String tmpY = "";
+    char tmpCh;
+    String pixels = "";
+    int startX = 0;
+    int startY = 0;    
+    
+    while(sdFile.available()) 
+    {
+      tmpCh = sdFile.read();
+      if(lineNo == 0)
+      {
+        if(tmpCh == '\n')
+        {
+          lineNo++;
+          detCom = 0;
+        }
+        if(tmpCh == ',')
+        {
+          detCom = 1;
+        }
+        else
+        {
+          if(detCom == 0)
+          {
+            tmpX += tmpCh;
+          }
+          else
+          {
+            tmpY += tmpCh;
+          }
+        }
+      }
+      else
+      {
+        if(tmpCh != ',' && tmpCh != '\n')
+          pixels += tmpCh;
+      }
+    }
+
+    Serial.print("Finished parsig image with Dimension (x,y): ");
+    Serial.print(tmpX);
+    Serial.print(", ");
+    Serial.print(tmpY);
+    
+    sdFile.close();
+
+    dimX = tmpX.toInt();
+    dimY = tmpY.toInt();
+
+    startX = ((84 / 2) - (dimX / 2));
+    startY = ((48 / 2) - (dimY / 2));
+
+    Serial.println("Pixels for x,y:");
+    int i = 0;
+    for(int row = 0; row < dimY; row++)
+    {
+      for(int col = 0; col < dimX; col++)
+      {
+        setPixel(startX + col, startY + row, int(pixels.charAt(i))-48);
+        i++;
+      }
+    }
+    transferBuffer();
+  }
+  else
+  {
+    Serial.print("File check: Error: ");
+    Serial.println(error);
+    
+    tmpError += setChar(0, 0, 'F');
+    tmpError += setChar(6, 0, 'i');
+    tmpError += setChar(12, 0, 'l');
+    tmpError += setChar(18, 0, 'e');
+    tmpError += setChar(24, 0, ' ');
+    tmpError += setChar(30, 0, 'E');
+    tmpError += setChar(36, 0, 'r');
+    tmpError += setChar(42, 0, 'r');
+    tmpError += setChar(48, 0, 'o');
+    tmpError += setChar(54, 0, 'r');
+    tmpError += setChar(60, 0, ':');
+    tmpError += setChar(66, 0, ' ');
+    tmpError += setChar(72, 0, (char)sdFile.available());
+  }
 }
 
