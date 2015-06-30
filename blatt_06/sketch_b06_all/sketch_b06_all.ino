@@ -111,6 +111,7 @@ int clkDivider = 84;
 //SD Parameter
 int slaveSelectSD = 4;
 File sdFile;
+String inString = "";
 
 //LCD Buffer to transmit
 byte pixBuffer[6][84];
@@ -146,16 +147,62 @@ void setup()
   
   setWhite();
 
+  Serial.print("Enter next File to read: ");
   //readTextFile("text2.txt");
   //readPicFile("smile1.img");
 }
 
 void loop() 
 {
-  readPicFile("smile2.img");
-  delay(200);
-  readPicFile("smile3.img");
-  delay(200);
+  
+  // send data only when you receive data:
+  if (Serial.available() > 0) 
+  {
+    // read the incoming byte:
+    inString = Serial.readString();
+    // say what you got:
+    char filename[sizeof(inString)];
+    inString.toCharArray(filename, sizeof(inString));
+    switch(parseFileExtension(inString))
+    {
+      case 1:
+        Serial.print("Openning Image File: ");
+        Serial.print(filename);
+        Serial.print("\n\n\n");
+        readPicFile(filename);
+        break;
+      case 2:
+        Serial.print("Openning Text File: ");
+        Serial.print(filename);
+        Serial.print("\n\n\n");
+        readTextFile(filename);
+        break;
+      default:
+        Serial.println("ERROR parsing FileExtension\n\n\n\n");
+        break;
+    }
+    Serial.print("Enter next File to read: ");   
+  }
+}
+
+int parseFileExtension(String string)
+{
+  String extension = string.substring(string.length()-3,string.length());
+  if(extension == "img")
+  {
+    Serial.println("Detected Image file");
+    return 1;
+  }
+  else if(extension == "txt")
+  {
+    Serial.println("Detected Text file");
+    return 2;
+  }
+  else
+  {
+    Serial.println("No known Fileformat detected");
+    return 0;
+  }
 }
 
 /* ####################
@@ -269,6 +316,7 @@ int checkFileSD(char *fileName)
 
 int readTextFile(char *fileName)
 {
+  setWhite();
   Serial.print("Read Textfile: ");
   Serial.println(fileName);
   
@@ -290,7 +338,6 @@ int readTextFile(char *fileName)
         writeY+=8;
         writeX=0;
       }
-      Serial.println(writeX);
     }
     sdFile.close();
   }
@@ -311,12 +358,13 @@ int readTextFile(char *fileName)
     tmpError += setChar(54, 0, 'r');
     tmpError += setChar(60, 0, ':');
     tmpError += setChar(66, 0, ' ');
-    tmpError += setChar(72, 0, (char)sdFile.available());
+    tmpError += setChar(72, 0, (char)error+48);
   }
 }
 
 int readPicFile(char *fileName)
 {
+  setWhite();
   Serial.print("Read Imagefile: ");
   Serial.println(fileName);
   
@@ -369,11 +417,6 @@ int readPicFile(char *fileName)
           pixels += tmpCh;
       }
     }
-
-    Serial.print("Finished parsig image with Dimension (x,y): ");
-    Serial.print(tmpX);
-    Serial.print(", ");
-    Serial.print(tmpY);
     
     sdFile.close();
 
@@ -412,7 +455,7 @@ int readPicFile(char *fileName)
     tmpError += setChar(54, 0, 'r');
     tmpError += setChar(60, 0, ':');
     tmpError += setChar(66, 0, ' ');
-    tmpError += setChar(72, 0, (char)sdFile.available());
+    tmpError += setChar(72, 0, (char)error+48);
   }
 }
 
